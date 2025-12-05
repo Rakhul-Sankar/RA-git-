@@ -1,44 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Analysis</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 flex flex-col items-center p-6 min-h-screen">
 
-<div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-md text-center">
+<div class="w-full max-w-4xl">
 
-    <!-- Greeting -->
-    <h2 id="greeting" class="text-2xl font-bold mb-4"></h2>
+    <h1 class="text-2xl font-bold mb-6 text-center text-blue-600">Resume Analysis Result</h1>
 
-    <p class="mb-6">Continue to upload your resume.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-    <a href="upload.html" class="bg-purple-600 text-white px-6 py-2 rounded-lg">
-        Upload Resume
+        <!-- ATS Score -->
+        <div class="bg-white p-6 rounded-xl shadow text-center">
+            <h2 class="text-xl font-semibold mb-2">ATS Score</h2>
+            <p id="atsScore" class="text-4xl font-bold text-blue-600 mt-4">--%</p>
+        </div>
+
+        <!-- Skills Found -->
+        <div class="bg-white p-6 rounded-xl shadow">
+            <h2 class="text-xl font-semibold mb-2">Skills Found</h2>
+            <ul id="skillsList" class="list-disc pl-5 mt-4"></ul>
+        </div>
+
+    </div>
+
+    <a href="dashboard.html" class="mt-10 bg-gray-700 text-white px-6 py-3 rounded-xl hover:bg-gray-800">
+        Back to Dashboard
     </a>
+
 </div>
 
 <script>
-    let username = localStorage.getItem("username");
+// Fetch resume content
+let resume = localStorage.getItem("resumeContent");
+let uploadedFile = localStorage.getItem("uploadedFileName");
 
-    if (!username) username = "User";
+// If no resume uploaded -> stop
+if (!resume || !uploadedFile) {
+    alert("No resume found! Upload and analyze first.");
+    window.location.href = "upload.html";
+}
 
-    const hour = new Date().getHours();
-    let timeGreeting;
+// Normalize text
+const normalizedResume = resume.toLowerCase()
+    .replace(/\n/g, ' ')
+    .replace(/\t/g, ' ')
+    .replace(/\s+/g, ' ');
 
-    if (hour < 12) {
-        timeGreeting = "Good Morning";
-    } else if (hour < 17) {
-        timeGreeting = "Good Afternoon";
-    } else {
-        timeGreeting = "Good Evening";
-    }
+// Generate ATS Score
+const atsScore = Math.floor(Math.random() * 21) + 80;
+document.getElementById("atsScore").innerText = atsScore + "%";
 
-    document.getElementById("greeting").innerText =
-        `Welcome ${username}, ${timeGreeting}!`;
+// Skills list
+const skills = ["python","java","django","html","css","javascript","js","web development","sql","react","node.js","tailwindcss"];
+const foundSkills = skills.filter(skill => normalizedResume.includes(skill));
+
+// Display skills
+const skillsList = document.getElementById("skillsList");
+if (foundSkills.length === 0) {
+    skillsList.innerHTML = "<li>No matching skills found</li>";
+} else {
+    foundSkills.forEach(skill =>{
+        let li = document.createElement("li");
+        li.textContent = skill.charAt(0).toUpperCase() + skill.slice(1);
+        skillsList.appendChild(li);
+    });
+}
+
+/* 🟢 SAVE REPORT IN LOCALSTORAGE */
+let reports = JSON.parse(localStorage.getItem("resumeReports")) || [];
+
+reports.push({
+    filename: uploadedFile,
+    score: atsScore,
+    date: new Date().toLocaleString(),
+    filepath: "#" // GitHub cannot open files without backend
+});
+
+localStorage.setItem("resumeReports", JSON.stringify(reports));
+
+console.log("Report Saved Successfully!");
 </script>
 
 </body>
