@@ -3,60 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Past Reports - Dashboard</title>
+    <title>Resume Analyzer - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .dark body { background: linear-gradient(to bottom right, #1a1a2e, #16213e); }
-        .dark .bg-white { background-color: #1e293b !important; }
-        .dark .bg-white\/80, .dark .bg-white\/90 { background-color: rgba(30, 41, 59, 0.9) !important; }
-        .dark .text-gray-800, .dark .text-gray-700, .dark .text-gray-600 { color: #e2e8f0 !important; }
-        .dark .text-gray-500, .dark .text-gray-400 { color: #94a3b8 !important; }
-        .dark .border-gray-200 { border-color: #475569 !important; }
-        .dark .bg-yellow-100 { background-color: #422006 !important; }
-        .dark .border-yellow-400 { border-color: #ca8a04 !important; }
-        
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-        
-        .modal-enter { animation: modalIn 0.3s ease-out; }
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95) translateY(-20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        
+        .analyzing { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .toast { animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Analysis Animation */
-        .analyzing {
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .progress-bar {
-            transition: width 0.3s ease;
-        }
-
-        /* Spinning loader */
-        .spinner {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .progress-bar { transition: width 0.3s ease; }
+        .modal-enter { animation: modalIn 0.3s ease-out; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
-<body class="bg-gradient-to-br from-emerald-50 to-green-100 min-h-screen transition-all duration-300">
+<body class="bg-gradient-to-br from-slate-50 to-blue-100 min-h-screen">
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed top-4 right-4 z-[100] flex flex-col gap-2"></div>
 
@@ -64,32 +25,159 @@
     <nav class="bg-white/90 backdrop-blur-md shadow-xl border-b sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <a href="index.html" class="text-2xl font-bold text-gray-800 hover:text-green-600 transition-colors">← Dashboard</a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="index.html" class="text-gray-700 hover:text-purple-600 font-medium px-4 py-2 rounded-lg transition-all hover:bg-purple-50">Home</a>
-                    <a href="profile.html" class="text-gray-700 hover:text-blue-600 font-medium px-4 py-2 rounded-lg transition-all hover:bg-blue-50">Profile</a>
-                    <button id="darkModeToggle" class="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all" title="Toggle Dark Mode">
-                        <span id="darkModeIcon">🌙</span>
-                    </button>
-                    <button onclick="storage.showShortcuts()" class="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all" title="Keyboard Shortcuts">
-                        ⌨️
-                    </button>
+                <h1 class="text-2xl font-bold text-gray-800">📊 Resume Analyzer</h1>
+                <div class="flex items-center gap-4">
+                    <a href="upload.html" class="px-4 py-2 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all">
+                        ➕ Upload
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-6 py-12">
-        <div class="text-center mb-12">
-            <h1 class="text-5xl font-black bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-6 drop-shadow-lg">
-                📊 Resume Storage
-            </h1>
-            <p class="text-gray-600 text-lg max-w-2xl mx-auto">
-                Manage and analyze your uploaded resumes with AI-powered insights.
-            </p>
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        
+        <!-- Analysis Time Settings Panel -->
+        <div class="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">⚙️ Analysis Configuration</h2>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-500">Analysis Mode:</span>
+                    <select id="analysisMode" onchange="storage.setAnalysisMode(this.value)" 
+                            class="px-4 py-2 border-2 border-gray-200 rounded-xl font-semibold focus:border-purple-500 focus:outline-none">
+                        <option value="simulated">🎭 Simulated (Demo)</option>
+                        <option value="api">🌐 Real API</option>
+                        <option value="instant">⚡ Instant (Testing)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Speed Selection -->
+                <div class="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-2xl">
+                    <h3 class="font-bold text-gray-700 mb-4">⏱️ Analysis Speed</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-white/50 transition-all">
+                            <input type="radio" name="speed" value="instant" onchange="storage.setSpeed(this.value)" class="w-5 h-5">
+                            <div>
+                                <div class="font-semibold text-gray-800">⚡ Instant</div>
+                                <div class="text-xs text-gray-500">0.5 seconds - Testing only</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-white/50 transition-all">
+                            <input type="radio" name="speed" value="fast" onchange="storage.setSpeed(this.value)" class="w-5 h-5">
+                            <div>
+                                <div class="font-semibold text-gray-800">🚀 Fast</div>
+                                <div class="text-xs text-gray-500">2 seconds - Quick scan</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-white/50 transition-all bg-white/50">
+                            <input type="radio" name="speed" value="normal" onchange="storage.setSpeed(this.value)" class="w-5 h-5" checked>
+                            <div>
+                                <div class="font-semibold text-gray-800">🔄 Normal</div>
+                                <div class="text-xs text-gray-500">4 seconds - Balanced</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-white/50 transition-all">
+                            <input type="radio" name="speed" value="thorough" onchange="storage.setSpeed(this.value)" class="w-5 h-5">
+                            <div>
+                                <div class="font-semibold text-gray-800">🔬 Thorough</div>
+                                <div class="text-xs text-gray-500">8 seconds - Deep analysis</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl hover:bg-white/50 transition-all">
+                            <input type="radio" name="speed" value="realistic" onchange="storage.setSpeed(this.value)" class="w-5 h-5">
+                            <div>
+                                <div class="font-semibold text-gray-800">🎯 Realistic</div>
+                                <div class="text-xs text-gray-500">15-30 seconds - Like real AI</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Custom Time -->
+                <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl">
+                    <h3 class="font-bold text-gray-700 mb-4">🎛️ Custom Duration</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-2">Time per resume (seconds)</label>
+                            <input type="range" id="customTime" min="0.5" max="60" step="0.5" value="4" 
+                                   onchange="storage.setCustomTime(this.value)"
+                                   class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>0.5s</span>
+                                <span id="customTimeDisplay" class="font-bold text-purple-600">4s</span>
+                                <span>60s</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Estimated Time Calculator -->
+                        <div class="bg-white rounded-xl p-4 mt-4">
+                            <div class="text-sm text-gray-600 mb-2">📊 Estimated Total Time</div>
+                            <div class="flex items-end gap-2">
+                                <span id="estimatedTime" class="text-3xl font-black text-purple-600">0s</span>
+                                <span class="text-gray-500 text-sm mb-1">for <span id="pendingCountEst">0</span> pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Options -->
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl">
+                    <h3 class="font-bold text-gray-700 mb-4">🎯 Analysis Options</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="autoAnalyze" onchange="storage.toggleAutoAnalyze()" class="w-5 h-5 rounded">
+                            <div>
+                                <div class="font-semibold text-gray-800">Auto-Analyze</div>
+                                <div class="text-xs text-gray-500">Analyze new uploads automatically</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="showProgress" checked onchange="storage.toggleProgress()" class="w-5 h-5 rounded">
+                            <div>
+                                <div class="font-semibold text-gray-800">Show Progress</div>
+                                <div class="text-xs text-gray-500">Display analysis steps</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="notifyComplete" checked class="w-5 h-5 rounded">
+                            <div>
+                                <div class="font-semibold text-gray-800">Notifications</div>
+                                <div class="text-xs text-gray-500">Alert when complete</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="parallelAnalysis" class="w-5 h-5 rounded">
+                            <div>
+                                <div class="font-semibold text-gray-800">Parallel Processing</div>
+                                <div class="text-xs text-gray-500">Analyze multiple at once</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Configuration (shown when API mode selected) -->
+            <div id="apiConfig" class="hidden mt-6 p-6 bg-gray-50 rounded-2xl">
+                <h3 class="font-bold text-gray-700 mb-4">🌐 API Configuration</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-2">API Endpoint</label>
+                        <input type="text" id="apiEndpoint" placeholder="https://api.example.com/analyze" 
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-2">API Key</label>
+                        <input type="password" id="apiKey" placeholder="Your API key" 
+                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-3">
+                    💡 Connect to OpenAI, Claude, or your custom resume analysis API
+                </p>
+            </div>
         </div>
 
         <!-- Analysis Queue Banner -->
@@ -99,619 +187,336 @@
                     <div class="text-4xl spinner">⚙️</div>
                     <div>
                         <h3 class="font-bold text-lg">Analysis in Progress</h3>
-                        <p id="analysisQueueStatus" class="text-white/80">Processing resumes...</p>
+                        <p id="analysisStatus" class="text-white/80">Initializing...</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <div class="bg-white/20 rounded-full px-4 py-2">
-                        <span id="analysisQueueCount">0</span> in queue
+                    <div class="text-center">
+                        <div id="timeRemaining" class="text-2xl font-bold">--</div>
+                        <div class="text-xs text-white/70">Time Remaining</div>
                     </div>
-                    <button onclick="storage.pauseAnalysis()" id="pauseAnalysisBtn" class="px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition-all font-semibold">
+                    <div class="text-center">
+                        <div id="currentProgress" class="text-2xl font-bold">0/0</div>
+                        <div class="text-xs text-white/70">Progress</div>
+                    </div>
+                    <button onclick="storage.togglePause()" id="pauseBtn" class="px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition-all font-semibold">
                         ⏸️ Pause
                     </button>
+                    <button onclick="storage.stopAnalysis()" class="px-4 py-2 bg-red-500/50 rounded-xl hover:bg-red-500 transition-all font-semibold">
+                        ⏹️ Stop
+                    </button>
                 </div>
             </div>
+            
             <!-- Progress Bar -->
-            <div class="mt-4 bg-white/20 rounded-full h-3 overflow-hidden">
-                <div id="analysisProgressBar" class="progress-bar bg-white h-full rounded-full" style="width: 0%"></div>
+            <div class="mt-4 bg-white/20 rounded-full h-4 overflow-hidden">
+                <div id="progressBar" class="progress-bar bg-white h-full rounded-full flex items-center justify-end pr-2" style="width: 0%">
+                    <span id="progressPercent" class="text-xs font-bold text-purple-600"></span>
+                </div>
+            </div>
+
+            <!-- Current Step Display -->
+            <div id="currentStepDisplay" class="mt-4 flex gap-2 flex-wrap">
+                <!-- Dynamic analysis steps -->
             </div>
         </div>
 
-        <!-- Controls Section -->
-        <div class="bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-8 mb-8 border border-white/50">
-            <!-- Row 1: Search and Main Actions -->
-            <div class="flex flex-col lg:flex-row gap-4 items-end lg:items-center justify-between mb-6">
-                <div class="relative w-full lg:w-96 flex-1">
-                    <input type="text" id="searchInput" placeholder="🔍 Search resumes by name, tags..." 
-                           class="w-full pl-12 pr-4 py-4 bg-white/50 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:outline-none transition-all text-lg shadow-inner">
-                    <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">🔍</div>
-                </div>
-                <div class="flex gap-3 flex-shrink-0 flex-wrap">
-                    <!-- Analyze All Pending Button -->
-                    <button id="analyzeAllBtn" onclick="storage.analyzeAllPending()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold rounded-xl hover:shadow-lg transition-all hover:scale-105 text-sm">
-                        🤖 Analyze All Pending
-                    </button>
-                    <button id="clearAllBtn" class="px-6 py-3 bg-red-500/90 text-white font-bold rounded-xl hover:bg-red-600 shadow-lg transition-all hover:scale-105 text-sm">
-                        🗑️ Clear All
-                    </button>
-                    <button onclick="storage.exportAll()" class="px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 shadow-lg transition-all hover:scale-105 text-sm">
-                        📤 Export
-                    </button>
-                    <a href="upload.html" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all text-sm">
-                        ➕ Upload New
-                    </a>
-                </div>
+        <!-- Stats -->
+        <div class="grid md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white rounded-2xl p-5 shadow-xl cursor-pointer hover:shadow-2xl transition-all" onclick="storage.filterBy('all')">
+                <div id="totalCount" class="text-3xl font-black text-blue-600">0</div>
+                <div class="text-xs text-gray-500 uppercase font-semibold">Total</div>
             </div>
-
-            <!-- Row 2: Filters and Sort -->
-            <div class="flex flex-col lg:flex-row gap-4 items-center justify-between border-t pt-6">
-                <!-- Filter by Status -->
-                <div class="flex gap-2 flex-wrap">
-                    <span class="text-gray-600 font-semibold self-center mr-2">Filter:</span>
-                    <button onclick="storage.filterBy('all')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all ring-2 ring-offset-2 ring-purple-500" data-filter="all">
-                        📋 All
-                    </button>
-                    <button onclick="storage.filterBy('analyzed')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-green-100 text-green-700 hover:bg-green-200 transition-all" data-filter="analyzed">
-                        ✅ Analyzed
-                    </button>
-                    <button onclick="storage.filterBy('pending')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-all" data-filter="pending">
-                        ⏳ Pending
-                    </button>
-                    <button onclick="storage.filterBy('processing')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all" data-filter="processing">
-                        🔄 Processing
-                    </button>
-                    <button onclick="storage.filterBy('favorites')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-pink-100 text-pink-700 hover:bg-pink-200 transition-all" data-filter="favorites">
-                        ⭐ Favorites
-                    </button>
-                </div>
-
-                <!-- Sort Options & Auto-Analyze Toggle -->
-                <div class="flex gap-4 items-center flex-wrap">
-                    <!-- Auto-Analyze Toggle -->
-                    <label class="flex items-center gap-2 cursor-pointer bg-gray-100 px-4 py-2 rounded-xl">
-                        <input type="checkbox" id="autoAnalyzeToggle" onchange="storage.toggleAutoAnalyze()" class="w-5 h-5 rounded">
-                        <span class="text-sm font-semibold text-gray-700">Auto-Analyze</span>
-                    </label>
-                    
-                    <select id="sortSelect" onchange="storage.sortBy(this.value)" class="px-4 py-2 rounded-xl border-2 border-gray-200 bg-white focus:border-purple-500 focus:outline-none font-semibold text-gray-700">
-                        <option value="date-desc">📅 Newest First</option>
-                        <option value="date-asc">📅 Oldest First</option>
-                        <option value="score-desc">📊 Highest Score</option>
-                        <option value="score-asc">📊 Lowest Score</option>
-                        <option value="name-asc">🔤 Name A-Z</option>
-                        <option value="name-desc">🔤 Name Z-A</option>
-                        <option value="status">📋 By Status</option>
-                    </select>
-                </div>
+            <div class="bg-white rounded-2xl p-5 shadow-xl cursor-pointer hover:shadow-2xl transition-all" onclick="storage.filterBy('analyzed')">
+                <div id="analyzedCount" class="text-3xl font-black text-green-600">0</div>
+                <div class="text-xs text-gray-500 uppercase font-semibold">Analyzed</div>
             </div>
-
-            <!-- Row 3: Bulk Actions -->
-            <div id="bulkActions" class="hidden border-t pt-6 mt-6">
-                <div class="flex gap-3 items-center flex-wrap">
-                    <span class="text-gray-600 font-semibold"><span id="selectedCount">0</span> selected</span>
-                    <button onclick="storage.bulkAnalyze()" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all">
-                        🤖 Analyze Selected
-                    </button>
-                    <button onclick="storage.bulkDelete()" class="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all">
-                        🗑️ Delete Selected
-                    </button>
-                    <button onclick="storage.bulkExport()" class="px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-all">
-                        📤 Export Selected
-                    </button>
-                    <button onclick="storage.clearSelection()" class="px-4 py-2 bg-gray-500 text-white rounded-xl text-sm font-semibold hover:bg-gray-600 transition-all">
-                        ✖️ Clear Selection
-                    </button>
-                </div>
+            <div class="bg-white rounded-2xl p-5 shadow-xl cursor-pointer hover:shadow-2xl transition-all" onclick="storage.filterBy('pending')">
+                <div id="pendingCount" class="text-3xl font-black text-yellow-500">0</div>
+                <div class="text-xs text-gray-500 uppercase font-semibold">Pending</div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-xl cursor-pointer hover:shadow-2xl transition-all" onclick="storage.filterBy('processing')">
+                <div id="processingCount" class="text-3xl font-black text-blue-500">0</div>
+                <div class="text-xs text-gray-500 uppercase font-semibold">Processing</div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-xl">
+                <div id="avgScore" class="text-3xl font-black text-purple-600">--%</div>
+                <div class="text-xs text-gray-500 uppercase font-semibold">Avg Score</div>
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="grid md:grid-cols-6 gap-4 mb-8">
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-white/50 hover:shadow-2xl transition-all group cursor-pointer" onclick="storage.filterBy('all')">
-                <div id="totalResumes" class="text-3xl font-black text-blue-600 mb-1 group-hover:scale-110 transition-transform">0</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total</div>
-            </div>
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-white/50 hover:shadow-2xl transition-all group cursor-pointer" onclick="storage.filterBy('analyzed')">
-                <div id="analyzedCount" class="text-3xl font-black text-green-600 mb-1 group-hover:scale-110 transition-transform">0</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Analyzed</div>
-            </div>
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-white/50 hover:shadow-2xl transition-all group cursor-pointer" onclick="storage.filterBy('pending')">
-                <div id="pendingCount" class="text-3xl font-black text-yellow-500 mb-1 group-hover:scale-110 transition-transform">0</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Pending</div>
-            </div>
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-white/50 hover:shadow-2xl transition-all group cursor-pointer" onclick="storage.filterBy('processing')">
-                <div id="processingCount" class="text-3xl font-black text-blue-500 mb-1 group-hover:scale-110 transition-transform">0</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Processing</div>
-            </div>
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-white/50 hover:shadow-2xl transition-all group cursor-pointer" onclick="storage.filterBy('favorites')">
-                <div id="favoritesCount" class="text-3xl font-black text-pink-600 mb-1 group-hover:scale-110 transition-transform">0</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Favorites</div>
-            </div>
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-white/50 hover:shadow-2xl transition-all group">
-                <div id="avgScoreDisplay" class="text-3xl font-black text-purple-600 mb-1 group-hover:scale-110 transition-transform">0%</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Avg Score</div>
-            </div>
-        </div>
-
-        <!-- Analysis Settings Panel -->
-        <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-6 mb-8 border border-white/50">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-gray-800 text-lg">🤖 Analysis Settings</h3>
-                <button onclick="storage.toggleAnalysisSettings()" class="text-gray-500 hover:text-gray-700">
-                    <span id="analysisSettingsToggle">▼</span>
-                </button>
-            </div>
-            <div id="analysisSettingsPanel" class="hidden">
-                <div class="grid md:grid-cols-3 gap-6">
-                    <!-- Analysis Speed -->
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Analysis Speed</label>
-                        <select id="analysisSpeed" onchange="storage.updateAnalysisSettings()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
-                            <option value="fast">⚡ Fast (2s per resume)</option>
-                            <option value="normal" selected>🔄 Normal (4s per resume)</option>
-                            <option value="thorough">🔬 Thorough (8s per resume)</option>
-                        </select>
-                    </div>
-                    <!-- Analysis Criteria -->
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Scoring Focus</label>
-                        <select id="scoringFocus" onchange="storage.updateAnalysisSettings()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
-                            <option value="balanced">⚖️ Balanced</option>
-                            <option value="technical">💻 Technical Skills</option>
-                            <option value="experience">📈 Experience</option>
-                            <option value="education">🎓 Education</option>
-                        </select>
-                    </div>
-                    <!-- Notifications -->
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Notifications</label>
-                        <div class="flex flex-col gap-2">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="notifyOnComplete" checked class="w-5 h-5 rounded">
-                                <span class="text-sm text-gray-700">Notify when complete</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="soundOnComplete" class="w-5 h-5 rounded">
-                                <span class="text-sm text-gray-700">Play sound</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Debug Info -->
-        <div id="debugInfo" class="bg-yellow-100 border-2 border-yellow-400 rounded-2xl p-6 mb-8 text-sm font-mono">
-            <strong>🔍 LIVE STATUS:</strong> <span id="debugText">Loading...</span>
+        <!-- Action Buttons -->
+        <div class="flex gap-4 mb-8 flex-wrap">
+            <button id="analyzeAllBtn" onclick="storage.analyzeAllPending()" 
+                    class="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
+                🤖 Analyze All Pending
+            </button>
+            <button onclick="storage.addTestResumes(5)" 
+                    class="px-6 py-4 bg-gray-600 text-white font-bold rounded-2xl shadow-xl hover:bg-gray-700 transition-all">
+                ➕ Add 5 Test Resumes
+            </button>
+            <button onclick="storage.clearAll()" 
+                    class="px-6 py-4 bg-red-500 text-white font-bold rounded-2xl shadow-xl hover:bg-red-600 transition-all">
+                🗑️ Clear All
+            </button>
         </div>
 
         <!-- Resume Grid -->
         <div id="resumeGrid" class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <!-- Dynamic -->
-        </div>
-
-        <!-- Pagination -->
-        <div id="paginationBottom" class="flex justify-center gap-2 mt-8">
-            <!-- Dynamic -->
+            <!-- Dynamic content -->
         </div>
     </main>
 
-    <!-- View Resume Modal -->
-    <div id="viewModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden modal-enter">
-            <div class="p-6 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                <h2 id="viewModalTitle" class="text-xl font-bold">Resume Details</h2>
-                <button onclick="storage.closeModal('viewModal')" class="text-2xl hover:scale-110 transition-transform">✕</button>
-            </div>
-            <div id="viewModalContent" class="p-6 overflow-y-auto max-h-[60vh]">
-                <!-- Dynamic content -->
-            </div>
-            <div class="p-6 border-t flex gap-3 justify-end bg-gray-50">
-                <button onclick="storage.closeModal('viewModal')" class="px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Analysis Results Modal -->
+    <!-- Analysis Detail Modal -->
     <div id="analysisModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden modal-enter">
-            <div class="p-6 border-b flex items-center justify-between bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
-                <h2 class="text-xl font-bold">🤖 Analysis Results</h2>
-                <button onclick="storage.closeModal('analysisModal')" class="text-2xl hover:scale-110 transition-transform">✕</button>
+            <div class="p-6 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                <h2 id="modalTitle" class="text-xl font-bold">Analysis Results</h2>
+                <button onclick="storage.closeModal()" class="text-2xl hover:scale-110 transition-transform">✕</button>
             </div>
-            <div id="analysisModalContent" class="p-6 overflow-y-auto max-h-[60vh]">
+            <div id="modalContent" class="p-6 overflow-y-auto max-h-[70vh]">
                 <!-- Dynamic content -->
             </div>
-            <div class="p-6 border-t flex gap-3 justify-end bg-gray-50">
-                <button onclick="storage.closeModal('analysisModal')" class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all">
-                    Got it!
-                </button>
-            </div>
         </div>
     </div>
 
-    <!-- Edit Resume Modal -->
-    <div id="editModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full modal-enter">
-            <div class="p-6 border-b flex items-center justify-between bg-gradient-to-r from-green-600 to-teal-600 text-white">
-                <h2 class="text-xl font-bold">✏️ Edit Resume</h2>
-                <button onclick="storage.closeModal('editModal')" class="text-2xl hover:scale-110 transition-transform">✕</button>
-            </div>
-            <div class="p-6">
-                <input type="hidden" id="editResumeId">
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-semibold mb-2">Resume Name</label>
-                    <input type="text" id="editResumeName" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-semibold mb-2">Tags (comma separated)</label>
-                    <input type="text" id="editResumeTags" placeholder="engineering, senior, tech" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-semibold mb-2">Notes</label>
-                    <textarea id="editResumeNotes" rows="3" placeholder="Add notes..." class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none resize-none"></textarea>
-                </div>
-            </div>
-            <div class="p-6 border-t flex gap-3 justify-end bg-gray-50">
-                <button onclick="storage.closeModal('editModal')" class="px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-all">
-                    Cancel
-                </button>
-                <button onclick="storage.saveEdit()" class="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all">
-                    💾 Save Changes
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Keyboard Shortcuts Modal -->
-    <div id="shortcutsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full modal-enter">
-            <div class="p-6 border-b flex items-center justify-between bg-gradient-to-r from-gray-700 to-gray-900 text-white">
-                <h2 class="text-xl font-bold">⌨️ Keyboard Shortcuts</h2>
-                <button onclick="storage.closeModal('shortcutsModal')" class="text-2xl hover:scale-110 transition-transform">✕</button>
-            </div>
-            <div class="p-6">
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center py-2 border-b">
-                        <span class="text-gray-700">Search resumes</span>
-                        <kbd class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-sm">/</kbd>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b">
-                        <span class="text-gray-700">Analyze all pending</span>
-                        <kbd class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-sm">A</kbd>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b">
-                        <span class="text-gray-700">Upload new resume</span>
-                        <kbd class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-sm">N</kbd>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b">
-                        <span class="text-gray-700">Toggle dark mode</span>
-                        <kbd class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-sm">D</kbd>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b">
-                        <span class="text-gray-700">Export all</span>
-                        <kbd class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-sm">E</kbd>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b">
-                        <span class="text-gray-700">Pause/Resume analysis</span>
-                        <kbd class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-sm">P</kbd>
-                    </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-gray-700">Undo last delete</span>
-                        <kbd class="px-3 py-1 bg-gray-100 rounded-lg font-mono text-sm">Ctrl+Z</kbd>
-                    </div>
-                </div>
-            </div>
-            <div class="p-6 border-t flex gap-3 justify-end bg-gray-50">
-                <button onclick="storage.closeModal('shortcutsModal')" class="px-6 py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all">
-                    Got it!
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
+<script>
 window.storage = {
     key: "advancedResumes_v2",
     resumes: [],
-    selectedIds: new Set(),
-    currentFilter: 'all',
-    currentSort: 'date-desc',
-    currentPage: 1,
-    itemsPerPage: 12,
-    deletedResumes: [],
     
-    // ========== ANALYSIS STATE ==========
-    analysisQueue: [],
-    isAnalyzing: false,
-    isPaused: false,
-    autoAnalyze: false,
-    analysisSettings: {
-        speed: 'normal', // fast: 2s, normal: 4s, thorough: 8s
-        focus: 'balanced',
-        notifyOnComplete: true,
-        soundOnComplete: false
+    // ========== TIMING CONFIGURATION ==========
+    analysisConfig: {
+        mode: 'simulated',      // simulated | api | instant
+        speed: 'normal',        // instant | fast | normal | thorough | realistic | custom
+        customTimeSeconds: 4,   // Custom time in seconds
+        showProgress: true,
+        autoAnalyze: false,
+        parallelProcessing: false,
+        maxParallel: 3
     },
-    currentAnalysisProgress: 0,
-    totalToAnalyze: 0,
+
+    // Speed presets in milliseconds
+    speedPresets: {
+        instant: 500,
+        fast: 2000,
+        normal: 4000,
+        thorough: 8000,
+        realistic: 20000  // 15-30 seconds range
+    },
+
+    // Analysis state
+    analysisState: {
+        isAnalyzing: false,
+        isPaused: false,
+        queue: [],
+        currentIndex: 0,
+        totalCount: 0,
+        startTime: null,
+        currentResumeId: null
+    },
+
+    // Current filter
+    currentFilter: 'all',
 
     init() {
-        this.loadSettings();
+        this.loadConfig();
         this.load();
         this.bindEvents();
-        this.initDarkMode();
+        this.updateUI();
         
-        // Check for pending analysis on load
-        this.checkPendingOnLoad();
-        
-        // Live update every 2 sec
-        setInterval(() => this.load(), 2000);
+        // Live update
+        setInterval(() => {
+            this.load();
+            this.updateEstimatedTime();
+        }, 1000);
     },
 
-    // ========== SETTINGS ==========
-    loadSettings() {
+    // ========== CONFIGURATION ==========
+    loadConfig() {
         try {
-            const saved = localStorage.getItem('analysisSettings');
+            const saved = localStorage.getItem('analysisConfig');
             if (saved) {
-                this.analysisSettings = { ...this.analysisSettings, ...JSON.parse(saved) };
+                this.analysisConfig = { ...this.analysisConfig, ...JSON.parse(saved) };
             }
-            this.autoAnalyze = localStorage.getItem('autoAnalyze') === 'true';
-        } catch (e) {
-            console.error('Settings load error:', e);
+        } catch(e) { console.error('Config load error:', e); }
+        
+        // Update UI with saved config
+        setTimeout(() => {
+            document.querySelector(`input[name="speed"][value="${this.analysisConfig.speed}"]`)?.click();
+            document.getElementById('customTime').value = this.analysisConfig.customTimeSeconds;
+            document.getElementById('customTimeDisplay').textContent = this.analysisConfig.customTimeSeconds + 's';
+            document.getElementById('autoAnalyze').checked = this.analysisConfig.autoAnalyze;
+            document.getElementById('analysisMode').value = this.analysisConfig.mode;
+            this.toggleApiConfig();
+        }, 100);
+    },
+
+    saveConfig() {
+        localStorage.setItem('analysisConfig', JSON.stringify(this.analysisConfig));
+    },
+
+    setSpeed(speed) {
+        this.analysisConfig.speed = speed;
+        
+        // Update custom time slider to match preset
+        if (speed !== 'custom') {
+            const time = this.speedPresets[speed] / 1000;
+            document.getElementById('customTime').value = time;
+            document.getElementById('customTimeDisplay').textContent = time + 's';
+            this.analysisConfig.customTimeSeconds = time;
         }
+        
+        this.saveConfig();
+        this.updateEstimatedTime();
+        this.showToast(`⏱️ Speed set to ${speed} (${this.getAnalysisDuration()/1000}s per resume)`, 'info');
     },
 
-    saveSettings() {
-        localStorage.setItem('analysisSettings', JSON.stringify(this.analysisSettings));
-        localStorage.setItem('autoAnalyze', this.autoAnalyze);
+    setCustomTime(seconds) {
+        this.analysisConfig.customTimeSeconds = parseFloat(seconds);
+        this.analysisConfig.speed = 'custom';
+        document.getElementById('customTimeDisplay').textContent = seconds + 's';
+        
+        // Uncheck all radio buttons
+        document.querySelectorAll('input[name="speed"]').forEach(r => r.checked = false);
+        
+        this.saveConfig();
+        this.updateEstimatedTime();
     },
 
-    updateAnalysisSettings() {
-        this.analysisSettings.speed = document.getElementById('analysisSpeed').value;
-        this.analysisSettings.focus = document.getElementById('scoringFocus').value;
-        this.analysisSettings.notifyOnComplete = document.getElementById('notifyOnComplete').checked;
-        this.analysisSettings.soundOnComplete = document.getElementById('soundOnComplete').checked;
-        this.saveSettings();
-        this.showToast('⚙️ Settings saved', 'success');
+    setAnalysisMode(mode) {
+        this.analysisConfig.mode = mode;
+        this.saveConfig();
+        this.toggleApiConfig();
+        
+        const modeNames = { simulated: 'Simulated Demo', api: 'Real API', instant: 'Instant Testing' };
+        this.showToast(`🔄 Analysis mode: ${modeNames[mode]}`, 'info');
+    },
+
+    toggleApiConfig() {
+        const apiConfig = document.getElementById('apiConfig');
+        if (this.analysisConfig.mode === 'api') {
+            apiConfig.classList.remove('hidden');
+        } else {
+            apiConfig.classList.add('hidden');
+        }
     },
 
     toggleAutoAnalyze() {
-        this.autoAnalyze = document.getElementById('autoAnalyzeToggle').checked;
-        this.saveSettings();
+        this.analysisConfig.autoAnalyze = document.getElementById('autoAnalyze').checked;
+        this.saveConfig();
+        this.showToast(this.analysisConfig.autoAnalyze ? '🤖 Auto-analyze enabled' : '🤖 Auto-analyze disabled', 'info');
+    },
+
+    toggleProgress() {
+        this.analysisConfig.showProgress = document.getElementById('showProgress').checked;
+        this.saveConfig();
+    },
+
+    // Get current analysis duration in milliseconds
+    getAnalysisDuration() {
+        if (this.analysisConfig.mode === 'instant') return 100;
         
-        if (this.autoAnalyze) {
-            this.showToast('🤖 Auto-analyze enabled - new uploads will be analyzed automatically', 'success');
-            this.checkPendingOnLoad();
+        if (this.analysisConfig.speed === 'custom') {
+            return this.analysisConfig.customTimeSeconds * 1000;
+        }
+        
+        if (this.analysisConfig.speed === 'realistic') {
+            // Random between 15-30 seconds
+            return Math.floor(Math.random() * 15000) + 15000;
+        }
+        
+        return this.speedPresets[this.analysisConfig.speed] || 4000;
+    },
+
+    updateEstimatedTime() {
+        const pending = this.resumes.filter(r => r.status === 'pending').length;
+        const timePerResume = this.getAnalysisDuration() / 1000;
+        const totalSeconds = pending * timePerResume;
+        
+        document.getElementById('pendingCountEst').textContent = pending;
+        
+        if (totalSeconds < 60) {
+            document.getElementById('estimatedTime').textContent = Math.round(totalSeconds) + 's';
+        } else if (totalSeconds < 3600) {
+            document.getElementById('estimatedTime').textContent = Math.round(totalSeconds / 60) + 'm ' + Math.round(totalSeconds % 60) + 's';
         } else {
-            this.showToast('🤖 Auto-analyze disabled', 'info');
+            document.getElementById('estimatedTime').textContent = Math.round(totalSeconds / 3600) + 'h ' + Math.round((totalSeconds % 3600) / 60) + 'm';
         }
     },
 
-    toggleAnalysisSettings() {
-        const panel = document.getElementById('analysisSettingsPanel');
-        const toggle = document.getElementById('analysisSettingsToggle');
-        panel.classList.toggle('hidden');
-        toggle.textContent = panel.classList.contains('hidden') ? '▼' : '▲';
-    },
-
-    checkPendingOnLoad() {
-        const pending = this.resumes.filter(r => r.status === 'pending');
-        if (pending.length > 0 && this.autoAnalyze) {
-            setTimeout(() => {
-                this.showToast(`Found ${pending.length} pending resume(s). Starting auto-analysis...`, 'info');
-                this.analyzeAllPending();
-            }, 1000);
-        }
-    },
-
-    // ========== DARK MODE ==========
-    initDarkMode() {
-        const isDark = localStorage.getItem('darkMode') === 'true';
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-            document.getElementById('darkModeIcon').textContent = '☀️';
-        }
-        document.getElementById('autoAnalyzeToggle').checked = this.autoAnalyze;
-    },
-
-    toggleDarkMode() {
-        const isDark = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('darkMode', isDark);
-        document.getElementById('darkModeIcon').textContent = isDark ? '☀️' : '🌙';
-        this.showToast(isDark ? '🌙 Dark mode enabled' : '☀️ Light mode enabled', 'info');
-    },
-
-    // ========== TOAST NOTIFICATIONS ==========
-    showToast(message, type = 'success') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        const colors = {
-            success: 'bg-green-500',
-            error: 'bg-red-500',
-            info: 'bg-blue-500',
-            warning: 'bg-yellow-500'
-        };
-        
-        toast.className = `toast px-6 py-4 rounded-xl text-white font-semibold shadow-xl ${colors[type] || colors.info}`;
-        toast.textContent = message;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.animation = 'slideIn 0.3s ease-out reverse';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    },
-
-    // ========== DATA NORMALIZATION ==========
+    // ========== DATA OPERATIONS ==========
     normalizeResume(r) {
         if (!r || typeof r !== 'object') return null;
-        
         return {
             id: r.id || crypto.randomUUID(),
             name: r.name || "Untitled Resume",
             date: r.date || new Date().toLocaleDateString("en-CA"),
             uploadedAt: r.uploadedAt || Date.now(),
             analyzedAt: r.analyzedAt || null,
-            score: (r.score !== undefined && r.score !== null && !isNaN(r.score)) ? Number(r.score) : null,
-            status: r.status || "pending", // DEFAULT TO PENDING!
-            type: r.type || "Uploaded Resume",
-            fileData: r.fileData || null,
-            fileType: r.fileType || null,
+            score: r.score ?? null,
+            status: r.status || "pending",
+            type: r.type || "PDF",
             favorite: r.favorite || false,
             tags: Array.isArray(r.tags) ? r.tags : [],
-            notes: r.notes || "",
-            
-            // Analysis results
-            analysisResults: r.analysisResults || null
+            analysisResults: r.analysisResults || null,
+            analysisProgress: r.analysisProgress || 0
         };
     },
 
-    // ========== LOAD & SAVE ==========
     load() {
         try {
             const saved = localStorage.getItem(this.key);
-            let parsed = saved ? JSON.parse(saved) : [];
-            
-            this.resumes = parsed
+            this.resumes = (saved ? JSON.parse(saved) : [])
                 .map(r => this.normalizeResume(r))
-                .filter(r => r !== null && r.name);
-                
-            this.saveWithoutRender();
-        } catch (e) { 
+                .filter(r => r !== null);
+        } catch(e) { 
             console.error("Load error:", e);
             this.resumes = []; 
         }
-
         this.updateStats();
-        this.updateQueueBanner();
         this.render();
-        this.debug();
-    },
-
-    saveWithoutRender() {
-        localStorage.setItem(this.key, JSON.stringify(this.resumes));
     },
 
     save() {
         localStorage.setItem(this.key, JSON.stringify(this.resumes));
         this.updateStats();
-        this.updateQueueBanner();
-        this.debug();
         this.render();
     },
 
-    // ========== ANALYSIS ENGINE ==========
-    getAnalysisDuration() {
-        const durations = { fast: 2000, normal: 4000, thorough: 8000 };
-        return durations[this.analysisSettings.speed] || 4000;
-    },
-
-    async analyzeResume(id) {
-        const resume = this.resumes.find(r => r.id === id);
-        if (!resume) return null;
+    addTestResumes(count = 5) {
+        const names = [
+            "John_Smith_Resume.pdf", "Sarah_Johnson_CV.pdf", "Mike_Williams_Resume.docx",
+            "Emily_Brown_CV.pdf", "David_Jones_Resume.pdf", "Lisa_Garcia_CV.pdf",
+            "James_Miller_Resume.pdf", "Jennifer_Davis_CV.docx", "Robert_Wilson_Resume.pdf",
+            "Maria_Martinez_CV.pdf"
+        ];
         
-        if (resume.status === 'analyzed') {
-            this.showToast('This resume is already analyzed', 'info');
-            return resume.analysisResults;
+        for (let i = 0; i < count; i++) {
+            const name = names[Math.floor(Math.random() * names.length)];
+            this.resumes.unshift(this.normalizeResume({
+                name: name.replace('.pdf', `_${Date.now()}.pdf`).replace('.docx', `_${Date.now()}.docx`),
+                status: 'pending'
+            }));
         }
-
-        // Set to processing
-        resume.status = 'processing';
-        this.save();
-
-        // Simulate AI analysis
-        return new Promise((resolve) => {
-            const duration = this.getAnalysisDuration();
-            
-            setTimeout(() => {
-                // Generate analysis results
-                const results = this.generateAnalysisResults(resume);
-                
-                // Update resume
-                resume.status = 'analyzed';
-                resume.score = results.overallScore;
-                resume.analyzedAt = Date.now();
-                resume.analysisResults = results;
-                
-                this.save();
-                
-                if (this.analysisSettings.notifyOnComplete) {
-                    this.showToast(`✅ "${resume.name}" analyzed - Score: ${results.overallScore}%`, 'success');
-                }
-
-                if (this.analysisSettings.soundOnComplete) {
-                    this.playNotificationSound();
-                }
-                
-                resolve(results);
-            }, duration);
-        });
-    },
-
-    generateAnalysisResults(resume) {
-        // Simulate detailed analysis based on focus setting
-        const focus = this.analysisSettings.focus;
         
-        // Base scores with some randomization
-        let technicalScore = Math.floor(Math.random() * 30) + 60;
-        let experienceScore = Math.floor(Math.random() * 30) + 60;
-        let educationScore = Math.floor(Math.random() * 30) + 60;
-        let formattingScore = Math.floor(Math.random() * 20) + 75;
-        let keywordsScore = Math.floor(Math.random() * 25) + 65;
-
-        // Adjust based on focus
-        if (focus === 'technical') technicalScore = Math.min(100, technicalScore + 15);
-        if (focus === 'experience') experienceScore = Math.min(100, experienceScore + 15);
-        if (focus === 'education') educationScore = Math.min(100, educationScore + 15);
-
-        // Calculate overall score
-        const overallScore = Math.round(
-            (technicalScore * 0.25) +
-            (experienceScore * 0.30) +
-            (educationScore * 0.15) +
-            (formattingScore * 0.15) +
-            (keywordsScore * 0.15)
-        );
-
-        // Generate strengths and improvements based on scores
-        const strengths = [];
-        const improvements = [];
-
-        if (technicalScore >= 80) strengths.push('Strong technical skills presentation');
-        else improvements.push('Enhance technical skills section with more specifics');
-
-        if (experienceScore >= 80) strengths.push('Well-documented work experience');
-        else improvements.push('Add quantifiable achievements to experience');
-
-        if (educationScore >= 80) strengths.push('Clear educational background');
-        else improvements.push('Include relevant certifications or courses');
-
-        if (formattingScore >= 80) strengths.push('Professional formatting and layout');
-        else improvements.push('Improve visual hierarchy and spacing');
-
-        if (keywordsScore >= 80) strengths.push('Good use of industry keywords');
-        else improvements.push('Add more relevant keywords for ATS optimization');
-
-        return {
-            overallScore,
-            breakdown: {
-                technical: technicalScore,
-                experience: experienceScore,
-                education: educationScore,
-                formatting: formattingScore,
-                keywords: keywordsScore
-            },
-            strengths: strengths.slice(0, 3),
-            improvements: improvements.slice(0, 3),
-            atsCompatibility: formattingScore >= 75 ? 'High' : formattingScore >= 60 ? 'Medium' : 'Low',
-            estimatedRank: overallScore >= 85 ? 'Top 10%' : overallScore >= 70 ? 'Top 30%' : 'Top 50%',
-            analyzedWith: this.analysisSettings.focus,
-            analysisDate: new Date().toISOString()
-        };
+        this.save();
+        this.showToast(`➕ Added ${count} test resumes`, 'success');
+        
+        if (this.analysisConfig.autoAnalyze) {
+            setTimeout(() => this.analyzeAllPending(), 500);
+        }
     },
 
+    clearAll() {
+        if (confirm('Delete all resumes?')) {
+            this.resumes = [];
+            this.save();
+            this.showToast('🗑️ All resumes cleared', 'warning');
+        }
+    },
+
+    // ========== ANALYSIS ENGINE ==========
     async analyzeAllPending() {
         const pending = this.resumes.filter(r => r.status === 'pending');
         
@@ -720,133 +525,456 @@ window.storage = {
             return;
         }
 
-        this.isAnalyzing = true;
-        this.isPaused = false;
-        this.analysisQueue = pending.map(r => r.id);
-        this.totalToAnalyze = pending.length;
-        this.currentAnalysisProgress = 0;
-        
+        this.analysisState = {
+            isAnalyzing: true,
+            isPaused: false,
+            queue: pending.map(r => r.id),
+            currentIndex: 0,
+            totalCount: pending.length,
+            startTime: Date.now(),
+            currentResumeId: null
+        };
+
         this.updateQueueBanner();
         this.showToast(`🤖 Starting analysis of ${pending.length} resume(s)...`, 'info');
 
-        for (let i = 0; i < this.analysisQueue.length; i++) {
-            if (!this.isAnalyzing) break;
-            
-            while (this.isPaused) {
-                await new Promise(r => setTimeout(r, 500));
-                if (!this.isAnalyzing) break;
+        await this.processQueue();
+    },
+
+    async processQueue() {
+        const state = this.analysisState;
+        
+        while (state.currentIndex < state.queue.length && state.isAnalyzing) {
+            // Handle pause
+            while (state.isPaused && state.isAnalyzing) {
+                await this.delay(200);
             }
             
-            if (!this.isAnalyzing) break;
+            if (!state.isAnalyzing) break;
 
-            const id = this.analysisQueue[i];
-            await this.analyzeResume(id);
+            const resumeId = state.queue[state.currentIndex];
+            state.currentResumeId = resumeId;
             
-            this.currentAnalysisProgress = i + 1;
+            await this.analyzeResume(resumeId);
+            
+            state.currentIndex++;
             this.updateQueueBanner();
         }
 
-        this.isAnalyzing = false;
-        this.analysisQueue = [];
+        // Complete
+        this.analysisState.isAnalyzing = false;
         this.updateQueueBanner();
         
-        if (this.currentAnalysisProgress === this.totalToAnalyze) {
-            this.showToast(`🎉 All ${this.totalToAnalyze} resume(s) analyzed!`, 'success');
-            this.showAnalysisSummary();
+        if (state.currentIndex === state.totalCount) {
+            this.showAnalysisComplete();
         }
     },
 
-    pauseAnalysis() {
-        this.isPaused = !this.isPaused;
-        const btn = document.getElementById('pauseAnalysisBtn');
-        btn.innerHTML = this.isPaused ? '▶️ Resume' : '⏸️ Pause';
-        this.showToast(this.isPaused ? '⏸️ Analysis paused' : '▶️ Analysis resumed', 'info');
+    async analyzeResume(id) {
+        const resume = this.resumes.find(r => r.id === id);
+        if (!resume || resume.status === 'analyzed') return;
+
+        // Set to processing
+        resume.status = 'processing';
+        resume.analysisProgress = 0;
+        this.save();
+
+        const duration = this.getAnalysisDuration();
+        const steps = this.getAnalysisSteps();
+        const stepDuration = duration / steps.length;
+
+        // Simulate step-by-step analysis
+        for (let i = 0; i < steps.length; i++) {
+            if (!this.analysisState.isAnalyzing) {
+                resume.status = 'pending';
+                resume.analysisProgress = 0;
+                this.save();
+                return;
+            }
+
+            while (this.analysisState.isPaused) {
+                await this.delay(200);
+            }
+
+            // Update current step
+            this.updateCurrentStep(steps[i], i + 1, steps.length);
+            resume.analysisProgress = ((i + 1) / steps.length) * 100;
+            this.save();
+
+            await this.delay(stepDuration);
+        }
+
+        // Generate results
+        const results = this.generateResults(resume);
+        
+        resume.status = 'analyzed';
+        resume.score = results.overallScore;
+        resume.analyzedAt = Date.now();
+        resume.analysisResults = results;
+        resume.analysisProgress = 100;
+        
+        this.save();
+
+        if (document.getElementById('notifyComplete').checked) {
+            this.showToast(`✅ ${resume.name}: ${results.overallScore}%`, 'success');
+        }
+    },
+
+    getAnalysisSteps() {
+        return [
+            { icon: '📄', name: 'Reading document' },
+            { icon: '🔍', name: 'Extracting text' },
+            { icon: '📊', name: 'Analyzing structure' },
+            { icon: '💼', name: 'Evaluating experience' },
+            { icon: '🎓', name: 'Checking education' },
+            { icon: '⚡', name: 'Scanning skills' },
+            { icon: '🔑', name: 'Finding keywords' },
+            { icon: '📝', name: 'Formatting check' },
+            { icon: '🤖', name: 'AI scoring' },
+            { icon: '✅', name: 'Generating report' }
+        ];
+    },
+
+    updateCurrentStep(step, current, total) {
+        if (!this.analysisConfig.showProgress) return;
+        
+        const container = document.getElementById('currentStepDisplay');
+        container.innerHTML = `
+            <div class="bg-white/20 px-4 py-2 rounded-full flex items-center gap-2">
+                <span class="text-lg">${step.icon}</span>
+                <span class="font-semibold">${step.name}</span>
+                <span class="text-white/70">(${current}/${total})</span>
+            </div>
+        `;
+        
+        document.getElementById('analysisStatus').textContent = `${step.icon} ${step.name}...`;
+    },
+
+    generateResults(resume) {
+        const technical = Math.floor(Math.random() * 30) + 65;
+        const experience = Math.floor(Math.random() * 30) + 60;
+        const education = Math.floor(Math.random() * 25) + 70;
+        const formatting = Math.floor(Math.random() * 20) + 75;
+        const keywords = Math.floor(Math.random() * 25) + 65;
+
+        const overallScore = Math.round(
+            technical * 0.25 + experience * 0.30 + education * 0.15 + 
+            formatting * 0.15 + keywords * 0.15
+        );
+
+        return {
+            overallScore,
+            breakdown: { technical, experience, education, formatting, keywords },
+            strengths: this.generateStrengths(technical, experience, formatting),
+            improvements: this.generateImprovements(technical, experience, keywords),
+            atsScore: formatting >= 75 ? 'High' : formatting >= 60 ? 'Medium' : 'Low',
+            rank: overallScore >= 85 ? 'Top 10%' : overallScore >= 70 ? 'Top 30%' : 'Top 50%',
+            analysisDate: new Date().toISOString(),
+            duration: this.getAnalysisDuration()
+        };
+    },
+
+    generateStrengths(tech, exp, format) {
+        const strengths = [];
+        if (tech >= 80) strengths.push('Strong technical skills presentation');
+        if (exp >= 80) strengths.push('Well-documented work experience');
+        if (format >= 80) strengths.push('Professional formatting');
+        if (strengths.length === 0) strengths.push('Good foundational structure');
+        return strengths;
+    },
+
+    generateImprovements(tech, exp, keywords) {
+        const improvements = [];
+        if (tech < 70) improvements.push('Add more technical details');
+        if (exp < 70) improvements.push('Include quantifiable achievements');
+        if (keywords < 70) improvements.push('Optimize for ATS keywords');
+        if (improvements.length === 0) improvements.push('Minor formatting tweaks recommended');
+        return improvements;
+    },
+
+    // ========== QUEUE MANAGEMENT ==========
+    updateQueueBanner() {
+        const banner = document.getElementById('analysisQueueBanner');
+        const state = this.analysisState;
+        
+        if (!state.isAnalyzing && this.resumes.filter(r => r.status === 'processing').length === 0) {
+            banner.classList.add('hidden');
+            return;
+        }
+
+        banner.classList.remove('hidden');
+        
+        // Progress
+        const progress = state.totalCount > 0 ? (state.currentIndex / state.totalCount) * 100 : 0;
+        document.getElementById('progressBar').style.width = `${progress}%`;
+        document.getElementById('progressPercent').textContent = `${Math.round(progress)}%`;
+        document.getElementById('currentProgress').textContent = `${state.currentIndex}/${state.totalCount}`;
+        
+        // Time remaining
+        const elapsed = Date.now() - state.startTime;
+        const avgTimePerResume = state.currentIndex > 0 ? elapsed / state.currentIndex : this.getAnalysisDuration();
+        const remaining = (state.totalCount - state.currentIndex) * avgTimePerResume;
+        
+        if (remaining < 60000) {
+            document.getElementById('timeRemaining').textContent = Math.round(remaining / 1000) + 's';
+        } else {
+            document.getElementById('timeRemaining').textContent = Math.round(remaining / 60000) + 'm';
+        }
+        
+        // Pause button
+        document.getElementById('pauseBtn').innerHTML = state.isPaused ? '▶️ Resume' : '⏸️ Pause';
+    },
+
+    togglePause() {
+        this.analysisState.isPaused = !this.analysisState.isPaused;
+        this.updateQueueBanner();
+        this.showToast(this.analysisState.isPaused ? '⏸️ Paused' : '▶️ Resumed', 'info');
     },
 
     stopAnalysis() {
-        this.isAnalyzing = false;
-        this.isPaused = false;
-        this.analysisQueue = [];
+        this.analysisState.isAnalyzing = false;
+        this.analysisState.isPaused = false;
+        
+        // Reset any processing resumes back to pending
+        this.resumes.forEach(r => {
+            if (r.status === 'processing') {
+                r.status = 'pending';
+                r.analysisProgress = 0;
+            }
+        });
+        
+        this.save();
         this.updateQueueBanner();
-        this.showToast('🛑 Analysis stopped', 'warning');
+        this.showToast('⏹️ Analysis stopped', 'warning');
     },
 
-    updateQueueBanner() {
-        const banner = document.getElementById('analysisQueueBanner');
-        const processing = this.resumes.filter(r => r.status === 'processing').length;
+    showAnalysisComplete() {
+        const analyzed = this.resumes.filter(r => r.status === 'analyzed');
+        const avgScore = analyzed.length > 0 
+            ? Math.round(analyzed.reduce((sum, r) => sum + (r.score || 0), 0) / analyzed.length)
+            : 0;
+
+        this.showToast(`🎉 Analysis complete! Average score: ${avgScore}%`, 'success');
+    },
+
+    // ========== UI HELPERS ==========
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500', warning: 'bg-yellow-500' };
+        
+        const toast = document.createElement('div');
+        toast.className = `toast px-6 py-4 rounded-xl text-white font-semibold shadow-xl ${colors[type]}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.remove(), 3000);
+    },
+
+    updateStats() {
+        const analyzed = this.resumes.filter(r => r.status === 'analyzed');
+        
+        document.getElementById('totalCount').textContent = this.resumes.length;
+        document.getElementById('analyzedCount').textContent = analyzed.length;
+        document.getElementById('pendingCount').textContent = this.resumes.filter(r => r.status === 'pending').length;
+        document.getElementById('processingCount').textContent = this.resumes.filter(r => r.status === 'processing').length;
+        
+        const avg = analyzed.length > 0 
+            ? Math.round(analyzed.reduce((sum, r) => sum + (r.score || 0), 0) / analyzed.length)
+            : 0;
+        document.getElementById('avgScore').textContent = avg + '%';
+        
+        this.updateEstimatedTime();
+        this.updateAnalyzeButton();
+    },
+
+    updateAnalyzeButton() {
         const pending = this.resumes.filter(r => r.status === 'pending').length;
-        
-        if (this.isAnalyzing || processing > 0) {
-            banner.classList.remove('hidden');
-            document.getElementById('analysisQueueCount').textContent = this.analysisQueue.length;
-            document.getElementById('analysisQueueStatus').textContent = 
-                this.isPaused ? 'Paused...' : `Analyzing resume ${this.currentAnalysisProgress + 1} of ${this.totalToAnalyze}`;
-            
-            const progress = this.totalToAnalyze > 0 
-                ? (this.currentAnalysisProgress / this.totalToAnalyze) * 100 
-                : 0;
-            document.getElementById('analysisProgressBar').style.width = `${progress}%`;
-        } else {
-            banner.classList.add('hidden');
-        }
-
-        // Update analyze all button
         const btn = document.getElementById('analyzeAllBtn');
+        
         if (pending > 0) {
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            btn.disabled = false;
             btn.innerHTML = `🤖 Analyze All (${pending})`;
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
         } else {
+            btn.innerHTML = '✅ All Analyzed';
+            btn.disabled = true;
             btn.classList.add('opacity-50');
-            btn.innerHTML = '🤖 All Analyzed ✓';
         }
     },
 
-    showAnalysisSummary() {
-        const analyzed = this.resumes.filter(r => r.status === 'analyzed' && r.analysisResults);
-        if (analyzed.length === 0) return;
+    updateUI() {
+        this.updateStats();
+        this.updateEstimatedTime();
+    },
 
-        const avgScore = Math.round(analyzed.reduce((sum, r) => sum + (r.score || 0), 0) / analyzed.length);
-        const topScorer = analyzed.reduce((max, r) => (r.score || 0) > (max.score || 0) ? r : max);
+    filterBy(filter) {
+        this.currentFilter = filter;
+        this.render();
+    },
+
+    render() {
+        const box = document.getElementById('resumeGrid');
+        let list = [...this.resumes];
         
-        document.getElementById('analysisModalContent').innerHTML = `
-            <div class="text-center mb-6">
-                <div class="text-6xl mb-4">🎉</div>
-                <h3 class="text-2xl font-bold text-gray-800">Analysis Complete!</h3>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-blue-50 p-4 rounded-xl text-center">
-                    <div class="text-3xl font-black text-blue-600">${analyzed.length}</div>
-                    <div class="text-sm text-gray-600">Resumes Analyzed</div>
+        if (this.currentFilter !== 'all') {
+            list = list.filter(r => r.status === this.currentFilter);
+        }
+
+        if (list.length === 0) {
+            box.innerHTML = `
+                <div class="col-span-full text-center py-16">
+                    <div class="text-6xl mb-4">📭</div>
+                    <h3 class="text-2xl font-bold text-gray-600">No Resumes</h3>
+                    <p class="text-gray-500 mt-2">Add some test resumes to get started</p>
+                    <button onclick="storage.addTestResumes(5)" class="mt-6 px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all">
+                        ➕ Add Test Resumes
+                    </button>
                 </div>
-                <div class="bg-green-50 p-4 rounded-xl text-center">
-                    <div class="text-3xl font-black text-green-600">${avgScore}%</div>
-                    <div class="text-sm text-gray-600">Average Score</div>
+            `;
+            return;
+        }
+
+        box.innerHTML = list.map(r => {
+            const isProcessing = r.status === 'processing';
+            let borderColor = 'border-gray-300';
+            let scoreDisplay = '—';
+            let scoreColor = 'bg-gray-400';
+
+            if (r.status === 'analyzed' && r.score !== null) {
+                scoreDisplay = r.score + '%';
+                borderColor = 'border-green-500';
+                scoreColor = r.score > 80 ? 'bg-green-500' : r.score > 60 ? 'bg-yellow-500' : 'bg-red-500';
+            } else if (r.status === 'pending') {
+                borderColor = 'border-yellow-400';
+            } else if (r.status === 'processing') {
+                borderColor = 'border-blue-500';
+            }
+
+            return `
+                <div class="bg-white rounded-2xl shadow-xl p-5 border-l-4 ${borderColor} hover:shadow-2xl transition-all ${isProcessing ? 'analyzing' : ''}">
+                    <h3 class="font-bold text-gray-800 truncate mb-1">${r.name}</h3>
+                    <p class="text-xs text-gray-400 mb-3">📅 ${r.date}</p>
+                    
+                    ${isProcessing ? `
+                        <div class="mb-3">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Analyzing...</span>
+                                <span>${Math.round(r.analysisProgress || 0)}%</span>
+                            </div>
+                            <div class="bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full transition-all" style="width: ${r.analysisProgress || 0}%"></div>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="px-4 py-2 text-center rounded-full text-white font-bold ${scoreColor} mb-2">
+                            ${r.status === 'pending' ? '⏳ Pending' : `Score: ${scoreDisplay}`}
+                        </div>
+                    `}
+                    
+                    <div class="flex gap-2 mt-3">
+                        ${r.status === 'pending' ? `
+                            <button onclick="storage.analyzeSingle('${r.id}')" class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700">
+                                🤖 Analyze
+                            </button>
+                        ` : r.status === 'analyzed' ? `
+                            <button onclick="storage.viewResults('${r.id}')" class="flex-1 px-3 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold hover:bg-purple-700">
+                                👁️ View
+                            </button>
+                        ` : `
+                            <button disabled class="flex-1 px-3 py-2 bg-gray-400 text-white rounded-xl text-xs font-semibold cursor-not-allowed">
+                                <span class="spinner inline-block">⚙️</span> Processing
+                            </button>
+                        `}
+                        <button onclick="storage.deleteResume('${r.id}')" class="px-3 py-2 bg-red-500 text-white rounded-xl text-xs font-semibold hover:bg-red-600">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    async analyzeSingle(id) {
+        const resume = this.resumes.find(r => r.id === id);
+        if (!resume || resume.status !== 'pending') return;
+
+        this.analysisState = {
+            isAnalyzing: true,
+            isPaused: false,
+            queue: [id],
+            currentIndex: 0,
+            totalCount: 1,
+            startTime: Date.now(),
+            currentResumeId: id
+        };
+
+        this.updateQueueBanner();
+        await this.analyzeResume(id);
+        this.analysisState.isAnalyzing = false;
+        this.analysisState.currentIndex = 1;
+        this.updateQueueBanner();
+    },
+
+    viewResults(id) {
+        const resume = this.resumes.find(r => r.id === id);
+        if (!resume || !resume.analysisResults) return;
+
+        const r = resume.analysisResults;
+        const scoreColor = resume.score > 80 ? 'text-green-600' : resume.score > 60 ? 'text-yellow-600' : 'text-red-600';
+
+        document.getElementById('modalTitle').textContent = resume.name;
+        document.getElementById('modalContent').innerHTML = `
+            <div class="text-center py-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl mb-6">
+                <div class="text-6xl font-black ${scoreColor}">${resume.score}%</div>
+                <div class="text-gray-600 mt-2">Overall Score</div>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-xl mb-4">
+                <h4 class="font-bold text-gray-700 mb-3">📊 Breakdown</h4>
+                ${Object.entries(r.breakdown).map(([key, val]) => `
+                    <div class="mb-2">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="capitalize">${key}</span>
+                            <span class="font-bold ${val >= 80 ? 'text-green-600' : val >= 60 ? 'text-yellow-600' : 'text-red-600'}">${val}%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full ${val >= 80 ? 'bg-green-500' : val >= 60 ? 'bg-yellow-500' : 'bg-red-500'}" style="width: ${val}%"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-green-50 p-4 rounded-xl">
+                    <h4 class="font-bold text-green-700 mb-2">💪 Strengths</h4>
+                    <ul class="text-sm text-green-700 space-y-1">
+                        ${r.strengths.map(s => `<li>✓ ${s}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-xl">
+                    <h4 class="font-bold text-yellow-700 mb-2">📈 Improve</h4>
+                    <ul class="text-sm text-yellow-700 space-y-1">
+                        ${r.improvements.map(i => `<li>• ${i}</li>`).join('')}
+                    </ul>
                 </div>
             </div>
             
-            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-xl mb-4">
-                <div class="text-sm text-gray-600 mb-1">🏆 Top Performer</div>
-                <div class="font-bold text-gray-800">${topScorer.name}</div>
-                <div class="text-2xl font-black text-yellow-600">${topScorer.score}%</div>
-            </div>
-            
-            <div class="bg-gray-50 p-4 rounded-xl">
-                <div class="text-sm text-gray-600 mb-2">Score Distribution</div>
-                <div class="flex gap-2">
-                    <div class="flex-1 text-center">
-                        <div class="text-lg font-bold text-green-600">${analyzed.filter(r => r.score >= 80).length}</div>
-                        <div class="text-xs text-gray-500">Excellent (80+)</div>
-                    </div>
-                    <div class="flex-1 text-center">
-                        <div class="text-lg font-bold text-yellow-600">${analyzed.filter(r => r.score >= 60 && r.score < 80).length}</div>
-                        <div class="text-xs text-gray-500">Good (60-79)</div>
-                    </div>
-                    <div class="flex-1 text-center">
-                        <div class="text-lg font-bold text-red-600">${analyzed.filter(r => r.score < 60).length}</div>
-                        <div class="text-xs text-gray-500">Needs Work (<60)</div>
-                    </div>
+            <div class="flex gap-4 text-center">
+                <div class="flex-1 bg-blue-50 p-3 rounded-xl">
+                    <div class="font-bold text-blue-600">${r.atsScore}</div>
+                    <div class="text-xs text-gray-500">ATS Score</div>
+                </div>
+                <div class="flex-1 bg-purple-50 p-3 rounded-xl">
+                    <div class="font-bold text-purple-600">${r.rank}</div>
+                    <div class="text-xs text-gray-500">Ranking</div>
+                </div>
+                <div class="flex-1 bg-gray-50 p-3 rounded-xl">
+                    <div class="font-bold text-gray-600">${(r.duration / 1000).toFixed(1)}s</div>
+                    <div class="text-xs text-gray-500">Analysis Time</div>
                 </div>
             </div>
         `;
@@ -854,689 +982,31 @@ window.storage = {
         document.getElementById('analysisModal').classList.remove('hidden');
     },
 
-    playNotificationSound() {
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            gainNode.gain.value = 0.1;
-            
-            oscillator.start();
-            setTimeout(() => {
-                oscillator.frequency.value = 1000;
-                setTimeout(() => oscillator.stop(), 100);
-            }, 100);
-        } catch (e) {
-            console.log('Sound not available');
-        }
+    closeModal() {
+        document.getElementById('analysisModal').classList.add('hidden');
     },
 
-    // ========== CRUD OPERATIONS ==========
-    add(resumeData) {
-        let newResume;
-        
-        if (typeof resumeData === 'string') {
-            newResume = this.normalizeResume({ name: resumeData, status: 'pending' });
-        } else {
-            newResume = this.normalizeResume({ ...resumeData, status: resumeData.status || 'pending' });
-        }
-
-        this.resumes.unshift(newResume);
-        this.save();
-        this.showToast(`📄 "${newResume.name}" added`, 'success');
-
-        // Auto-analyze if enabled
-        if (this.autoAnalyze && newResume.status === 'pending') {
-            setTimeout(() => this.analyzeResume(newResume.id), 500);
-        }
-    },
-
-    delete(id, skipConfirm = false) {
-        if (!skipConfirm && !confirm("Delete this resume?")) return;
-        
-        const resume = this.resumes.find(r => r.id === id);
-        if (resume) {
-            this.deletedResumes.push({ ...resume, deletedAt: Date.now() });
+    deleteResume(id) {
+        if (confirm('Delete this resume?')) {
             this.resumes = this.resumes.filter(r => r.id !== id);
-            this.selectedIds.delete(id);
             this.save();
-            this.showToast(`🗑️ Deleted. Press Ctrl+Z to undo.`, 'warning');
+            this.showToast('🗑️ Resume deleted', 'warning');
         }
-    },
-
-    undoDelete() {
-        if (this.deletedResumes.length === 0) {
-            this.showToast('Nothing to undo', 'info');
-            return;
-        }
-        
-        const lastDeleted = this.deletedResumes.pop();
-        delete lastDeleted.deletedAt;
-        this.resumes.unshift(lastDeleted);
-        this.save();
-        this.showToast(`↩️ "${lastDeleted.name}" restored!`, 'success');
-    },
-
-    toggleFavorite(id) {
-        const resume = this.resumes.find(r => r.id === id);
-        if (resume) {
-            resume.favorite = !resume.favorite;
-            this.save();
-        }
-    },
-
-    // ========== BULK OPERATIONS ==========
-    bulkAnalyze() {
-        const selected = this.resumes.filter(r => 
-            this.selectedIds.has(r.id) && r.status === 'pending'
-        );
-        
-        if (selected.length === 0) {
-            this.showToast('No pending resumes selected', 'warning');
-            return;
-        }
-
-        this.analysisQueue = selected.map(r => r.id);
-        this.totalToAnalyze = selected.length;
-        this.currentAnalysisProgress = 0;
-        this.isAnalyzing = true;
-        this.isPaused = false;
-
-        this.clearSelection();
-        this.analyzeFromQueue();
-    },
-
-    async analyzeFromQueue() {
-        for (let i = 0; i < this.analysisQueue.length; i++) {
-            if (!this.isAnalyzing) break;
-            
-            while (this.isPaused) {
-                await new Promise(r => setTimeout(r, 500));
-            }
-
-            const id = this.analysisQueue[i];
-            await this.analyzeResume(id);
-            
-            this.currentAnalysisProgress = i + 1;
-            this.updateQueueBanner();
-        }
-
-        this.isAnalyzing = false;
-        this.analysisQueue = [];
-        this.updateQueueBanner();
-    },
-
-    toggleSelect(id) {
-        if (this.selectedIds.has(id)) {
-            this.selectedIds.delete(id);
-        } else {
-            this.selectedIds.add(id);
-        }
-        this.updateBulkActions();
-        this.render();
-    },
-
-    clearSelection() {
-        this.selectedIds.clear();
-        this.updateBulkActions();
-        this.render();
-    },
-
-    updateBulkActions() {
-        const bulkDiv = document.getElementById('bulkActions');
-        const countSpan = document.getElementById('selectedCount');
-        
-        if (this.selectedIds.size > 0) {
-            bulkDiv.classList.remove('hidden');
-            countSpan.textContent = this.selectedIds.size;
-        } else {
-            bulkDiv.classList.add('hidden');
-        }
-    },
-
-    bulkDelete() {
-        if (!confirm(`Delete ${this.selectedIds.size} selected resumes?`)) return;
-        
-        this.selectedIds.forEach(id => this.delete(id, true));
-        this.selectedIds.clear();
-        this.updateBulkActions();
-    },
-
-    bulkExport() {
-        const selected = this.resumes.filter(r => this.selectedIds.has(r.id));
-        this.downloadJSON(selected, 'selected_resumes.json');
-        this.showToast(`📤 ${selected.length} resumes exported`, 'success');
-    },
-
-    // ========== VIEW & EDIT ==========
-    viewDetails(id) {
-        const resume = this.resumes.find(r => r.id === id);
-        if (!resume) return;
-
-        const r = resume.analysisResults;
-        const scoreColor = (resume.score || 0) > 80 ? 'text-green-600' : (resume.score || 0) > 60 ? 'text-yellow-600' : 'text-red-600';
-        
-        let analysisHTML = '';
-        if (r) {
-            analysisHTML = `
-                <!-- Detailed Breakdown -->
-                <div class="bg-gray-50 p-4 rounded-xl mb-4">
-                    <h4 class="font-bold text-gray-700 mb-3">📊 Score Breakdown</h4>
-                    <div class="space-y-3">
-                        ${Object.entries(r.breakdown).map(([key, val]) => `
-                            <div>
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="capitalize text-gray-600">${key}</span>
-                                    <span class="font-bold ${val >= 80 ? 'text-green-600' : val >= 60 ? 'text-yellow-600' : 'text-red-600'}">${val}%</span>
-                                </div>
-                                <div class="bg-gray-200 rounded-full h-2">
-                                    <div class="h-2 rounded-full ${val >= 80 ? 'bg-green-500' : val >= 60 ? 'bg-yellow-500' : 'bg-red-500'}" style="width: ${val}%"></div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <!-- Strengths -->
-                <div class="bg-green-50 p-4 rounded-xl mb-4">
-                    <h4 class="font-bold text-green-700 mb-2">💪 Strengths</h4>
-                    <ul class="space-y-1">
-                        ${r.strengths.map(s => `<li class="text-green-700 text-sm">✓ ${s}</li>`).join('')}
-                    </ul>
-                </div>
-
-                <!-- Improvements -->
-                <div class="bg-yellow-50 p-4 rounded-xl mb-4">
-                    <h4 class="font-bold text-yellow-700 mb-2">📈 Areas for Improvement</h4>
-                    <ul class="space-y-1">
-                        ${r.improvements.map(i => `<li class="text-yellow-700 text-sm">• ${i}</li>`).join('')}
-                    </ul>
-                </div>
-
-                <!-- ATS & Rank -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-blue-50 p-4 rounded-xl text-center">
-                        <div class="text-lg font-bold text-blue-600">${r.atsCompatibility}</div>
-                        <div class="text-xs text-gray-600">ATS Compatibility</div>
-                    </div>
-                    <div class="bg-purple-50 p-4 rounded-xl text-center">
-                        <div class="text-lg font-bold text-purple-600">${r.estimatedRank}</div>
-                        <div class="text-xs text-gray-600">Estimated Rank</div>
-                    </div>
-                </div>
-            `;
-        } else if (resume.status === 'pending') {
-            analysisHTML = `
-                <div class="text-center py-8 bg-yellow-50 rounded-xl">
-                    <div class="text-4xl mb-4">⏳</div>
-                    <p class="text-gray-600 mb-4">This resume hasn't been analyzed yet</p>
-                    <button onclick="storage.analyzeResume('${resume.id}'); storage.closeModal('viewModal');" 
-                            class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all">
-                        🤖 Analyze Now
-                    </button>
-                </div>
-            `;
-        } else if (resume.status === 'processing') {
-            analysisHTML = `
-                <div class="text-center py-8 bg-blue-50 rounded-xl analyzing">
-                    <div class="text-4xl mb-4 spinner">⚙️</div>
-                    <p class="text-gray-600">Analysis in progress...</p>
-                </div>
-            `;
-        }
-
-        document.getElementById('viewModalTitle').textContent = resume.name;
-        document.getElementById('viewModalContent').innerHTML = `
-            <div class="space-y-6">
-                <!-- Score Circle -->
-                <div class="text-center py-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl">
-                    ${resume.score !== null ? `
-                        <div class="text-6xl font-black ${scoreColor}">${resume.score}%</div>
-                        <div class="text-gray-600 mt-2 font-semibold">Overall Score</div>
-                    ` : `
-                        <div class="text-4xl text-gray-400">—</div>
-                        <div class="text-gray-600 mt-2 font-semibold">Not Analyzed</div>
-                    `}
-                </div>
-                
-                <!-- Quick Info -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gray-50 p-4 rounded-xl">
-                        <div class="text-gray-500 text-sm">📅 Uploaded</div>
-                        <div class="font-bold text-gray-800">${resume.date}</div>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-xl">
-                        <div class="text-gray-500 text-sm">📋 Status</div>
-                        <div class="font-bold text-gray-800">${this.getStatusDisplay(resume.status)}</div>
-                    </div>
-                </div>
-
-                ${analysisHTML}
-                
-                <!-- Tags -->
-                ${resume.tags && resume.tags.length > 0 ? `
-                <div>
-                    <div class="text-gray-500 text-sm mb-2">🏷️ Tags</div>
-                    <div class="flex gap-2 flex-wrap">
-                        ${resume.tags.map(t => `<span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">${t}</span>`).join('')}
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-        `;
-        
-        document.getElementById('viewModal').classList.remove('hidden');
-    },
-
-    openEdit(id) {
-        const resume = this.resumes.find(r => r.id === id);
-        if (!resume) return;
-
-        document.getElementById('editResumeId').value = id;
-        document.getElementById('editResumeName').value = resume.name;
-        document.getElementById('editResumeTags').value = (resume.tags || []).join(', ');
-        document.getElementById('editResumeNotes').value = resume.notes || '';
-        
-        document.getElementById('editModal').classList.remove('hidden');
-    },
-
-    saveEdit() {
-        const id = document.getElementById('editResumeId').value;
-        const resume = this.resumes.find(r => r.id === id);
-        if (!resume) return;
-
-        resume.name = document.getElementById('editResumeName').value || resume.name;
-        resume.tags = document.getElementById('editResumeTags').value
-            .split(',').map(t => t.trim().toLowerCase()).filter(t => t);
-        resume.notes = document.getElementById('editResumeNotes').value;
-
-        this.save();
-        this.closeModal('editModal');
-        this.showToast('✅ Resume updated!', 'success');
-    },
-
-    // ========== FILTERING & SORTING ==========
-    filterBy(filter) {
-        this.currentFilter = filter;
-        this.currentPage = 1;
-        
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('ring-2', 'ring-offset-2', 'ring-purple-500');
-            if (btn.dataset.filter === filter) {
-                btn.classList.add('ring-2', 'ring-offset-2', 'ring-purple-500');
-            }
-        });
-        
-        this.render();
-    },
-
-    sortBy(sort) {
-        this.currentSort = sort;
-        this.render();
-    },
-
-    getFilteredResumes() {
-        let filtered = [...this.resumes];
-        
-        switch (this.currentFilter) {
-            case 'analyzed': filtered = filtered.filter(r => r.status === 'analyzed'); break;
-            case 'pending': filtered = filtered.filter(r => r.status === 'pending'); break;
-            case 'processing': filtered = filtered.filter(r => r.status === 'processing'); break;
-            case 'favorites': filtered = filtered.filter(r => r.favorite); break;
-        }
-        
-        const [field, direction] = this.currentSort.split('-');
-        filtered.sort((a, b) => {
-            let valA, valB;
-            
-            switch (field) {
-                case 'date': valA = new Date(a.date).getTime(); valB = new Date(b.date).getTime(); break;
-                case 'score': valA = a.score || 0; valB = b.score || 0; break;
-                case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
-                case 'status':
-                    const order = { pending: 0, processing: 1, analyzed: 2 };
-                    valA = order[a.status] || 0;
-                    valB = order[b.status] || 0;
-                    break;
-                default: return 0;
-            }
-            
-            return direction === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
-        });
-        
-        return filtered;
-    },
-
-    // ========== RENDER ==========
-    render() {
-        const box = document.getElementById("resumeGrid");
-        let filtered = this.getFilteredResumes();
-        
-        const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-        if (searchQuery) {
-            filtered = filtered.filter(r => 
-                r.name.toLowerCase().includes(searchQuery) ||
-                (r.tags && r.tags.some(t => t.includes(searchQuery)))
-            );
-        }
-
-        // Pagination
-        const totalPages = Math.ceil(filtered.length / this.itemsPerPage);
-        const startIdx = (this.currentPage - 1) * this.itemsPerPage;
-        const paginated = filtered.slice(startIdx, startIdx + this.itemsPerPage);
-
-        // Render pagination
-        this.renderPagination(filtered.length);
-
-        if (filtered.length === 0) {
-            box.innerHTML = `
-            <div class="col-span-full text-center py-24">
-                <div class="text-6xl mb-4">📭</div>
-                <h2 class="text-3xl font-black text-gray-600">No Resumes Found</h2>
-                <p class="text-gray-500 mt-2">Upload a resume to get started</p>
-                <a href="upload.html" class="mt-6 inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-xl font-bold hover:scale-105 transition-all">
-                    ➕ Upload New Resume
-                </a>
-            </div>`;
-            return;
-        }
-
-        box.innerHTML = paginated.map(resume => {
-            const { id, name, date, score, status, favorite, tags } = resume;
-            const isSelected = this.selectedIds.has(id);
-            const isProcessing = status === 'processing';
-
-            let scoreColor = 'bg-gray-400';
-            let scoreDisplay = '—';
-            if (score !== null) {
-                scoreDisplay = score + '%';
-                if (score > 80) scoreColor = 'bg-green-500';
-                else if (score > 60) scoreColor = 'bg-yellow-500';
-                else scoreColor = 'bg-red-500';
-            }
-
-            return `
-            <div class="bg-white rounded-2xl shadow-xl p-5 border-l-4 ${favorite ? 'border-yellow-500' : status === 'pending' ? 'border-yellow-400' : status === 'processing' ? 'border-blue-500' : 'border-green-500'} hover:shadow-2xl transition-all relative ${isSelected ? 'ring-2 ring-purple-500 ring-offset-2' : ''} ${isProcessing ? 'analyzing' : ''}">
-                <!-- Checkbox & Favorite -->
-                <div class="absolute top-3 right-3 flex gap-2">
-                    <input type="checkbox" 
-                           class="w-5 h-5 rounded cursor-pointer" 
-                           ${isSelected ? 'checked' : ''} 
-                           onchange="storage.toggleSelect('${id}')">
-                    <button onclick="storage.toggleFavorite('${id}')" class="text-xl hover:scale-110 transition-transform">
-                        ${favorite ? '⭐' : '☆'}
-                    </button>
-                </div>
-
-                <!-- Content -->
-                <h2 class="font-bold text-lg truncate mb-1 pr-20 cursor-pointer hover:text-purple-600" onclick="storage.viewDetails('${id}')">${name}</h2>
-                <p class="text-gray-400 text-xs mb-3">📅 ${date}</p>
-
-                <!-- Tags -->
-                ${tags && tags.length > 0 ? `
-                <div class="flex gap-1 flex-wrap mb-3">
-                    ${tags.slice(0, 2).map(t => `<span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">${t}</span>`).join('')}
-                    ${tags.length > 2 ? `<span class="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+${tags.length - 2}</span>` : ''}
-                </div>
-                ` : ''}
-
-                <!-- Score -->
-                <div class="px-4 py-2 text-center rounded-full text-white font-bold ${scoreColor}">
-                    ${status === 'processing' ? '<span class="spinner inline-block">⚙️</span> Analyzing...' : `Score: ${scoreDisplay}`}
-                </div>
-                
-                ${this.getStatusBadge(status)}
-
-                <!-- Actions -->
-                <div class="mt-4 grid grid-cols-3 gap-2">
-                    <button class="bg-blue-600 text-white px-2 py-2 rounded-xl hover:bg-blue-700 font-semibold text-xs"
-                        onclick="storage.viewDetails('${id}')">👁️ View</button>
-                    ${status === 'pending' ? `
-                        <button class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-2 py-2 rounded-xl hover:opacity-90 font-semibold text-xs"
-                            onclick="storage.analyzeResume('${id}')">🤖 Analyze</button>
-                    ` : `
-                        <button class="bg-green-600 text-white px-2 py-2 rounded-xl hover:bg-green-700 font-semibold text-xs"
-                            onclick="storage.openEdit('${id}')">✏️ Edit</button>
-                    `}
-                    <button class="bg-red-600 text-white px-2 py-2 rounded-xl hover:bg-red-700 font-semibold text-xs"
-                        onclick="storage.delete('${id}')">🗑️</button>
-                </div>
-            </div>
-            `;
-        }).join("");
-    },
-
-    renderPagination(totalItems) {
-        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
-        const container = document.getElementById('paginationBottom');
-        
-        if (totalPages <= 1) {
-            container.innerHTML = '';
-            return;
-        }
-
-        let html = `<button onclick="storage.goToPage(${this.currentPage - 1})" 
-                     class="px-4 py-2 rounded-xl ${this.currentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}"
-                     ${this.currentPage === 1 ? 'disabled' : ''}>←</button>`;
-        
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= this.currentPage - 1 && i <= this.currentPage + 1)) {
-                html += `<button onclick="storage.goToPage(${i})" 
-                         class="px-4 py-2 rounded-xl ${i === this.currentPage ? 'bg-purple-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}">${i}</button>`;
-            } else if (i === this.currentPage - 2 || i === this.currentPage + 2) {
-                html += '<span class="px-2">...</span>';
-            }
-        }
-        
-        html += `<button onclick="storage.goToPage(${this.currentPage + 1})" 
-                 class="px-4 py-2 rounded-xl ${this.currentPage === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}"
-                 ${this.currentPage === totalPages ? 'disabled' : ''}>→</button>`;
-        
-        container.innerHTML = html;
-    },
-
-    goToPage(page) {
-        const filtered = this.getFilteredResumes();
-        const totalPages = Math.ceil(filtered.length / this.itemsPerPage);
-        if (page < 1 || page > totalPages) return;
-        this.currentPage = page;
-        this.render();
-    },
-
-    // ========== HELPERS ==========
-    getStatusDisplay(status) {
-        const map = {
-            'analyzed': '✅ Analyzed',
-            'pending': '⏳ Pending',
-            'processing': '🔄 Processing',
-            'error': '❌ Error'
-        };
-        return map[status] || '⏳ Pending';
-    },
-
-    getStatusBadge(status) {
-        const badges = {
-            'analyzed': `<p class="text-xs text-green-600 mt-2 text-center font-semibold bg-green-100 py-1 px-2 rounded-full">✅ Analyzed</p>`,
-            'pending': `<p class="text-xs text-yellow-600 mt-2 text-center font-semibold bg-yellow-100 py-1 px-2 rounded-full">⏳ Pending Analysis</p>`,
-            'processing': `<p class="text-xs text-blue-600 mt-2 text-center font-semibold bg-blue-100 py-1 px-2 rounded-full analyzing">🔄 Processing...</p>`,
-            'error': `<p class="text-xs text-red-600 mt-2 text-center font-semibold bg-red-100 py-1 px-2 rounded-full">❌ Error</p>`
-        };
-        return badges[status] || badges['pending'];
-    },
-
-    closeModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden');
-    },
-
-    showShortcuts() {
-        document.getElementById('shortcutsModal').classList.remove('hidden');
-    },
-
-    exportAll() {
-        if (this.resumes.length === 0) {
-            this.showToast('No resumes to export', 'warning');
-            return;
-        }
-        this.downloadJSON(this.resumes, `resume_backup_${new Date().toISOString().split('T')[0]}.json`);
-        this.showToast(`📤 ${this.resumes.length} resumes exported`, 'success');
-    },
-
-    downloadJSON(data, filename) {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-    },
-
-    download(id) {
-        const resume = this.resumes.find(r => r.id === id);
-        if (!resume) return;
-        
-        const report = this.generateReport(resume);
-        const blob = new Blob([report], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${resume.name.replace(/\.[^/.]+$/, "")}_report.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-        this.showToast('📥 Report downloaded', 'success');
-    },
-
-    generateReport(resume) {
-        const r = resume.analysisResults;
-        return `
-═══════════════════════════════════════════════════════
-         RESUME ANALYSIS REPORT
-═══════════════════════════════════════════════════════
-
-Resume Name: ${resume.name}
-Date Uploaded: ${resume.date}
-Analysis Status: ${this.getStatusDisplay(resume.status)}
-Overall Score: ${resume.score !== null ? resume.score + '%' : 'Not analyzed'}
-
-${r ? `
-═══════════════════════════════════════════════════════
-         SCORE BREAKDOWN
-═══════════════════════════════════════════════════════
-
-Technical Skills:  ${r.breakdown.technical}%
-Experience:        ${r.breakdown.experience}%
-Education:         ${r.breakdown.education}%
-Formatting:        ${r.breakdown.formatting}%
-Keywords:          ${r.breakdown.keywords}%
-
-═══════════════════════════════════════════════════════
-         STRENGTHS
-═══════════════════════════════════════════════════════
-
-${r.strengths.map(s => `✓ ${s}`).join('\n')}
-
-═══════════════════════════════════════════════════════
-         AREAS FOR IMPROVEMENT
-═══════════════════════════════════════════════════════
-
-${r.improvements.map(i => `• ${i}`).join('\n')}
-
-═══════════════════════════════════════════════════════
-         SUMMARY
-═══════════════════════════════════════════════════════
-
-ATS Compatibility: ${r.atsCompatibility}
-Estimated Rank: ${r.estimatedRank}
-Analysis Focus: ${r.analyzedWith}
-
-` : `
-This resume has not been analyzed yet.
-`}
-═══════════════════════════════════════════════════════
-Report Generated: ${new Date().toLocaleString()}
-═══════════════════════════════════════════════════════
-        `.trim();
-    },
-
-    updateStats() {
-        const total = this.resumes.length;
-        const analyzed = this.resumes.filter(x => x.status === "analyzed");
-        
-        document.getElementById('totalResumes').innerText = total;
-        document.getElementById('analyzedCount').innerText = analyzed.length;
-        document.getElementById('pendingCount').innerText = this.resumes.filter(x => x.status === "pending").length;
-        document.getElementById('processingCount').innerText = this.resumes.filter(x => x.status === "processing").length;
-        document.getElementById('favoritesCount').innerText = this.resumes.filter(x => x.favorite).length;
-        
-        const avgScore = analyzed.length > 0 
-            ? Math.round(analyzed.reduce((sum, r) => sum + (r.score || 0), 0) / analyzed.length)
-            : 0;
-        document.getElementById('avgScoreDisplay').innerText = avgScore + '%';
-    },
-
-    debug() {
-        const analyzed = this.resumes.filter(x => x.status === "analyzed").length;
-        const pending = this.resumes.filter(x => x.status === "pending").length;
-        const processing = this.resumes.filter(x => x.status === "processing").length;
-        document.getElementById('debugText').innerText = 
-            `Total: ${this.resumes.length} | Analyzed: ${analyzed} | Pending: ${pending} | Processing: ${processing} | Queue: ${this.analysisQueue.length}`;
     },
 
     bindEvents() {
-        document.getElementById('searchInput').oninput = () => {
-            this.currentPage = 1;
-            this.render();
-        };
-
-        document.getElementById('clearAllBtn').onclick = () => {
-            if (confirm("Delete all resumes?")) {
-                this.deletedResumes = [...this.resumes];
-                localStorage.removeItem(this.key);
-                this.resumes = [];
-                this.selectedIds.clear();
-                this.load();
-                this.showToast('🗑️ All cleared. Ctrl+Z to undo.', 'warning');
-            }
-        };
-
-        document.getElementById('darkModeToggle').onclick = () => this.toggleDarkMode();
-
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                if (e.key === 'Escape') e.target.blur();
-                return;
-            }
+            if (e.target.tagName === 'INPUT') return;
             
-            switch (e.key.toLowerCase()) {
-                case '/': e.preventDefault(); document.getElementById('searchInput').focus(); break;
-                case 'n': window.location.href = 'upload.html'; break;
-                case 'd': this.toggleDarkMode(); break;
-                case 'e': this.exportAll(); break;
-                case 'a': this.analyzeAllPending(); break;
-                case 'p': if (this.isAnalyzing) this.pauseAnalysis(); break;
-                case 'escape': document.querySelectorAll('[id$="Modal"]').forEach(m => m.classList.add('hidden')); break;
-            }
-            
-            if (e.ctrlKey && e.key === 'z') {
-                e.preventDefault();
-                this.undoDelete();
-            }
+            if (e.key === 'a' || e.key === 'A') this.analyzeAllPending();
+            if (e.key === 'p' || e.key === 'P') if (this.analysisState.isAnalyzing) this.togglePause();
+            if (e.key === 'Escape') this.closeModal();
         });
 
-        window.addEventListener("storage", (e) => {
+        // Storage sync
+        window.addEventListener('storage', (e) => {
             if (e.key === this.key) this.load();
-        });
-
-        window.addEventListener("message", (e) => {
-            if (e.data && e.data.type === "NEW_RESUME") {
-                this.add(e.data);
-            }
         });
     }
 };
